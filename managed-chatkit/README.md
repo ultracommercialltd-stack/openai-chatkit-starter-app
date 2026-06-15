@@ -33,3 +33,21 @@ same project and organization.
 
 - UI: `frontend/src/components/ChatKitPanel.tsx`
 - Session logic: `backend/app/main.py`
+
+## Deploy to Vercel
+
+This directory is Vercel-ready:
+
+- `vercel.json` builds the Vite app to `frontend/dist` (static) and serves it.
+- `api/create-session.py` is a stdlib-only Python serverless function that
+  replaces the FastAPI backend for the hosted `/api/create-session` route.
+
+Steps:
+
+1. Create a Vercel project with **Root Directory** set to `managed-chatkit`.
+2. Add Environment Variables (Production + Preview):
+   - `OPENAI_API_KEY` — used at runtime by the serverless function.
+   - `VITE_CHATKIT_WORKFLOW_ID` — baked into the frontend bundle at build time,
+     so set it before deploying (or redeploy after adding it).
+3. Deploy. The static UI calls `/api/create-session`, which the Python function
+   handles.
