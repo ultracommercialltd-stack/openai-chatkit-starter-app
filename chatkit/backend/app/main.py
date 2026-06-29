@@ -1,4 +1,9 @@
-"""FastAPI entrypoint for the ChatKit starter backend."""
+"""FastAPI entrypoint for the LoveGenie ChatKit adapter backend.
+
+Receives ChatKit web-component payloads on POST /chatkit, builds a per-request
+RequestContext from headers (auth + x-lg-* context), and hands off to
+LoveGenieChatServer, which proxies to the locked Love-Genie backend.
+"""
 
 from __future__ import annotations
 
@@ -7,26 +12,34 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
-from .server import StarterChatServer
+from . import config
+from .auth import build_context
+from .server import LoveGenieChatServer
 
-app = FastAPI(title="ChatKit Starter API")
+app = FastAPI(title="LoveGenie ChatKit Adapter")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.CHATKIT_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-chatkit_server = StarterChatServer()
+chatkit_server = LoveGenieChatServer()
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok", "lovegenie_api_base": config.LOVEGENIE_API_BASE}
 
 
 @app.post("/chatkit")
 async def chatkit_endpoint(request: Request) -> Response:
-    """Proxy the ChatKit web component payload to the server implementation."""
+    """Process a ChatKit payload with per-request LoveGenie context."""
     payload = await request.body()
-    result = await chatkit_server.process(payload, {"request": request})
+    context = build_context(request.headers)
+    result = await chatkit_server.process(payload, context)
 
     if isinstance(result, StreamingResult):
         return StreamingResponse(result, media_type="text/event-stream")

@@ -19,22 +19,22 @@ source .venv/bin/activate
 echo "Installing backend deps (editable) ..."
 pip install -e . >/dev/null
 
-# Load env vars from the repo's .env.local (if present) so OPENAI_API_KEY
-# does not need to be exported manually.
+# Load env vars from the repo's .env.local (if present). The LoveGenie adapter
+# needs LOVEGENIE_API_BASE (and optional SUPABASE_*); it does NOT need an
+# OPENAI_API_KEY because the LLM lives in the Love-Genie backend.
 ENV_FILE="$PROJECT_ROOT/../.env.local"
-if [ -z "${OPENAI_API_KEY:-}" ] && [ -f "$ENV_FILE" ]; then
-  echo "Sourcing OPENAI_API_KEY from $ENV_FILE"
+if [ -f "$ENV_FILE" ]; then
+  echo "Sourcing env from $ENV_FILE"
   # shellcheck disable=SC1090
   set -a
   . "$ENV_FILE"
   set +a
 fi
 
-if [ -z "${OPENAI_API_KEY:-}" ]; then
-  echo "Set OPENAI_API_KEY in your environment or in .env.local before running this script."
-  exit 1
+if [ -z "${LOVEGENIE_API_BASE:-}" ]; then
+  echo "Note: LOVEGENIE_API_BASE not set; defaulting to http://127.0.0.1:4310"
 fi
 
-echo "Starting ChatKit backend on http://127.0.0.1:8000 ..."
+echo "Starting LoveGenie ChatKit adapter on http://127.0.0.1:8000 ..."
 exec uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
