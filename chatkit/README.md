@@ -1,4 +1,34 @@
-# ChatKit Starter
+# ChatKit Starter — LoveGenie adapter
+
+This backend has been adapted into the **LoveGenie ChatKit adapter**: a FastAPI
+server that speaks the ChatKit protocol to the `<ChatKit>` web component and
+proxies every turn to the locked Love-Genie backend (the LLM stays in
+Love-Genie). See `backend/app/server.py`, `widgets.py`, `lovegenie_client.py`.
+It needs `LOVEGENIE_API_BASE` (not `OPENAI_API_KEY`).
+
+## Deploy the adapter (persistent host — Render / Railway / Fly)
+
+The adapter keeps ChatKit thread state **in memory**, so it must run as **one
+always-on instance**, not a serverless function. A `Dockerfile` lives in
+`backend/`, and a Render Blueprint (`render.yaml`) sits at the repo root.
+
+**Render (one-click from repo):** New → Blueprint → connect this repo + the
+`claude/lovegenie-chatkit-comparison-y1ojhn` branch. Set these env vars:
+
+- `LOVEGENIE_API_BASE` — URL of the Love-Genie backend that serves `/api/*`.
+- `CHATKIT_ALLOWED_ORIGIN` — the LoveGenieApp domain (comma-separated).
+- `SUPABASE_JWT_SECRET` — optional (best-effort user-id decode only).
+
+**Railway / Fly:** point them at `backend/Dockerfile` (build context `backend/`)
+and set the same env vars. The container starts `uvicorn app.main:app` on `$PORT`.
+
+After deploy, copy the service URL and set LoveGenieApp's `/chatkit` rewrite
+(`vercel.json`) destination to `https://<service>/chatkit`, then flip
+`VITE_USE_CHATKIT=1`.
+
+---
+
+## (Upstream) Quick start
 
 Minimal Vite + React UI paired with a FastAPI backend that forwards chat
 requests to OpenAI through the ChatKit server library.

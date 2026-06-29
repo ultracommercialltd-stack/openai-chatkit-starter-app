@@ -1,0 +1,26 @@
+# Render Blueprint for the LoveGenie ChatKit adapter.
+# Render → New → Blueprint → connect this repo + branch. Render reads this file,
+# builds chatkit/backend/Dockerfile, and runs one always-on web service.
+#
+# After deploy, copy the service URL (https://<name>.onrender.com) and:
+#   1. point LoveGenieApp's /chatkit rewrite (vercel.json) at it, and
+#   2. set CHATKIT_ALLOWED_ORIGIN below to the LoveGenieApp domain.
+services:
+  - type: web
+    name: lovegenie-chatkit-adapter
+    runtime: docker
+    plan: starter            # always-on; the in-memory thread store needs one persistent instance
+    dockerfilePath: chatkit/backend/Dockerfile
+    dockerContext: chatkit/backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Base URL of the locked Love-Genie backend (the deployment that serves /api/*).
+      - key: LOVEGENIE_API_BASE
+        sync: false
+      # Supabase JWT secret (optional; best-effort user-id decode only).
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      # The LoveGenieApp origin allowed to call /chatkit (comma-separated).
+      - key: CHATKIT_ALLOWED_ORIGIN
+        sync: false
